@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Random Reddit Comment</title>
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+
+        #comment-section {
+            display: none;
+        }
+
+        #comment {
+            background-color: #ffffff;
+        }
+
+        .comment-container {
+            display: flex;
+            align-items: center;
+        }
+
+        .profile-pic {
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            margin-right: 15px;
+        }
+
+        .comment-details {
+            flex-grow: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="mt-5">Random Reddit Comment Fetcher</h1>
+        <form id="subreddit-form" class="my-4">
+            <div class="form-group">
+                <label for="subreddit">Subreddit:</label>
+                <input type="text" class="form-control" id="subreddit" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Fetch Random Comment</button>
+        </form>
+        <div id="comment-section" class="mt-4">
+            <h3>Comment:</h3>
+            <div class="comment-container">
+                <img id="profile-pic" class="profile-pic" src="" alt="Image Unavailable">
+                <div class="comment-details">
+                    <p id="comment" class="border p-3"></p>
+                    <p id="user" class="font-weight-bold"></p>
+                    <a id="post-link" href="" target="_blank">Link to Comment</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        document.getElementById('subreddit-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const subreddit = document.getElementById('subreddit').value;
+            const commentSection = document.getElementById('comment-section');
+            const commentParagraph = document.getElementById('comment');
+            const userParagraph = document.getElementById('user');
+            const profilePic = document.getElementById('profile-pic');
+            const postLink = document.getElementById('post-link');
+
+            try {
+                const response = await fetch(`https://www.reddit.com/r/${subreddit}/comments.json?limit=100`);
+                if (!response.ok) {
+                    throw new Error('Failed to fetch comments');
+                }
+                const data = await response.json();
+                const comments = data.data.children;
+
+                if (comments.length === 0) {
+                    commentParagraph.textContent = 'No comments found.';
+                    userParagraph.textContent = '';
+                    profilePic.src = '';
+                    postLink.href = '';
+                    postLink.textContent = '';
+                    commentSection.style.display = 'block';
+                    return;
+                }
+
+                const randomIndex = Math.floor(Math.random() * comments.length);
+                const randomComment = comments[randomIndex].data;
+
+                const commentText = randomComment.body;
+                const author = randomComment.author;
+                const postId = randomComment.link_id.split('_')[1];
+                const commentId = randomComment.id;
+                const postUrl = `https://www.reddit.com/r/${subreddit}/comments/${postId}/_/${commentId}`;
+                const profileImageUrl = `https://www.reddit.com/user/${author}/about.json`;
+
+                const profileResponse = await fetch(profileImageUrl);
+                const profileData = await profileResponse.json();
+
+                if (profileData.data.icon_img && profileData.data.icon_img !== 'null' && profileData.data.icon_img !== 'undefined') {
+                    profilePic.src = profileData.data.icon_img;
+                } else {
+                    profilePic.src = 'https://via.placeholder.com/50?text=reddit+pls+let+me+get+a+pfp+pls';
+                }
+
+                commentParagraph.textContent = commentText;
+                userParagraph.textContent = `Posted by: u/${author}`;
+                postLink.href = postUrl;
+                postLink.textContent = 'Link to Comment';
+                commentSection.style.display = 'block';
+            } catch (error) {
+                commentParagraph.textContent = 'Error fetching comment: ' + error.message;
+                userParagraph.textContent = '';
+                profilePic.src = 'https://via.placeholder.com/50?text=reddit+pls+let+me+get+a+pfp+pls';
+                postLink.href = '';
+                postLink.textContent = '';
+                commentSection.style.display = 'block';
+            }
+        });
+    </script>
+</body>
+</html>
